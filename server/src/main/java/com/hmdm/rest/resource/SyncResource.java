@@ -443,7 +443,7 @@ public class SyncResource {
                 // Kiosk mode is valid - enforce non-permissive mode for security
                 // When in kiosk mode, permissive must be false to prevent users from accessing device settings
                 if (configuration.getPermissive() != null && configuration.getPermissive()) {
-                    logger.info("Kiosk mode is enabled for configuration {} - forcing permissive mode to false to enforce restrictions", 
+                    logger.info("Kiosk mode is enabled for configuration {} - overriding permissive mode from true to false to enforce restrictions", 
                             configuration.getId());
                 }
                 data.setPermissive(false);

@@ -177,4 +177,4 @@ With kiosk mode enabled and permissive=false (automatic):
 - Users cannot install/uninstall apps
 - Users cannot change system configuration
 - Only the configured content app can run
-- Home button and recents can be optionally disabled
+- Home button and recent apps button can be optionally disabled
