@@ -140,3 +140,41 @@ If the above steps don't resolve the issue, provide:
 3. Results of the verification queries
 
 The detailed logging I added will pinpoint exactly which validation step is failing.
+
+## Important: Kiosk Mode Security
+
+### Automatic Security Enforcement
+
+When kiosk mode is enabled with a valid content app, the server **automatically enforces security restrictions**:
+
+1. **Permissive mode is forced to false**
+   - Even if permissive mode was enabled in configuration
+   - This ensures all kiosk restrictions are applied
+   - Users cannot access device settings or bypass restrictions
+
+2. **Server Log Message**
+   ```
+   INFO: Kiosk mode is enabled for configuration X - forcing permissive mode to false to enforce restrictions
+   ```
+   This is normal and indicates proper security enforcement.
+
+3. **Why This Matters**
+   - `kioskMode=true` + `permissive=true` would allow users to access settings (SECURITY RISK)
+   - `kioskMode=true` + `permissive=false` properly locks down the device (SECURE)
+   - Server automatically ensures the secure configuration
+
+### Settings in Configuration UI
+
+In the web UI, when kiosk mode is enabled:
+- The "Permissive mode" checkbox is disabled (grayed out)
+- Its value doesn't matter - server forces it to false anyway
+- This prevents administrators from accidentally creating an insecure configuration
+
+### What Gets Restricted in Kiosk Mode
+
+With kiosk mode enabled and permissive=false (automatic):
+- Users cannot access Android settings
+- Users cannot install/uninstall apps
+- Users cannot change system configuration
+- Only the configured content app can run
+- Home button and recents can be optionally disabled

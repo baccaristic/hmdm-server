@@ -6,6 +6,16 @@ If you're using iptables to redirect port 80 to 8080, redirect also for loopback
 
 # iptables -A OUTPUT -o lo -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 8080
 
+Problem: Users can still access device settings in kiosk mode
+Reason: Permissive mode allows users to bypass kiosk restrictions.
+Solution:
+This is now automatically fixed by the server. When kiosk mode is enabled with a valid content app:
+- The server automatically sets permissive mode to false
+- This ensures all restrictions are enforced
+- Users cannot access device settings or system apps
+Note: If you see in logs "forcing permissive mode to false to enforce restrictions", 
+this is normal behavior ensuring kiosk mode security.
+
 Problem: Kiosk mode is not working on Android device
 Reason: Kiosk mode requires a valid Content Application to be configured.
 Solution:
