@@ -408,7 +408,17 @@ public class SyncResource {
                 if (applicationVersion != null) {
                     Application application = this.unsecureDAO.findApplicationById(applicationVersion.getApplicationId());
                     data.setMainApp(application.getPkg());
+                } else {
+                    // Content app not found - disable kiosk mode to prevent device-side failure
+                    logger.warn("Kiosk mode is enabled for configuration {} but content app with ID {} does not exist. Disabling kiosk mode in sync response.",
+                            configuration.getId(), contentAppId);
+                    data.setKioskMode(false);
                 }
+            } else {
+                // No content app configured - disable kiosk mode
+                logger.warn("Kiosk mode is enabled for configuration {} but no content app is configured. Disabling kiosk mode in sync response.",
+                        configuration.getId());
+                data.setKioskMode(false);
             }
         }
 
