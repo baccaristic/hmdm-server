@@ -40,6 +40,8 @@ Headwind MDM control panel is cross-platform (it is written in Java and uses Tom
  - Open the web panel and follow the hints to generate a QR code
  - Perform the factory reset on your Android device, tap 7 times on the welcome screen
  - Follow the instructions to scan a QR code and enroll the mobile agent
+
+**Note on Kiosk Mode:** To use kiosk mode, you must configure a Content Application in the MDM settings. The Content Application is the app that will run in single-task mode on the device. See TROUBLESHOOTING.txt for more details.
  
 ## Contributing
 
