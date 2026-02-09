@@ -2,7 +2,6 @@
   "breadcrumb.plugin.xtra.main": "More plugins",
   "plugin.xtra.localization.key.name": "More plugins...",
   "plugin.xtra.tab.title": "More features in Headwind MDM Enterprise!",
-  "plugin.xtra.feature.kiosk": "Kiosk (single-task) mode",
   "plugin.xtra.feature.location": "Device location tracking",
   "plugin.xtra.feature.reset": "Remote reboot, lock and factory reset",
   "plugin.xtra.feature.photo": "Upload photos from devices",
