@@ -55,5 +55,5 @@ Solution:
    - ApplicationVersion.applicationId is NULL → database corruption, fix the foreign key
 5. If all database checks pass but kiosk mode still doesn't work:
    - Check the device logs for MDM-related errors
-   - Verify the device has the necessary permissions for kiosk mode
-   - Ensure the device is running Android 7+ with device owner provisioning
+   - Verify the device has the necessary permissions for kiosk mode (Device Owner or Device Admin)
+   - Ensure the device supports kiosk mode (Android 5+ recommended, full features require Android 7+)
