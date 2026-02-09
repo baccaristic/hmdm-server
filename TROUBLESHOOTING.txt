@@ -7,7 +7,7 @@ If you're using iptables to redirect port 80 to 8080, redirect also for loopback
 # iptables -A OUTPUT -o lo -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 8080
 
 Problem: Kiosk mode is not working on Android device
-Reason: Kiosk mode requires a Content Application to be configured.
+Reason: Kiosk mode requires a valid Content Application to be configured.
 Solution:
 1. Open the configuration settings in the web panel
 2. Navigate to the "MDM Settings" tab
@@ -15,4 +15,23 @@ Solution:
 4. Select a "Content Application" - this is the app that will run in kiosk mode
 5. Optionally configure additional kiosk settings (home button, recents, notifications, etc.)
 6. Save the configuration and sync your device
+
 Note: The Content Application must be installed on the device before kiosk mode can be activated.
+
+Problem: Kiosk mode is enabled in database but not working on device
+Reason: The Content Application configured for kiosk mode may have been deleted or is invalid.
+Solution:
+1. Check the server logs for warnings like: "Kiosk mode is enabled for configuration X but content app with ID Y does not exist"
+2. Verify the Content Application exists:
+   - Query the database: SELECT * FROM applications WHERE id IN (SELECT applicationId FROM applicationVersions WHERE id = Y)
+   - If the application is missing, it was deleted
+3. Fix the configuration:
+   - Option A: Re-add the deleted application to the system
+   - Option B: Open the configuration in web UI, go to MDM Settings, and select a different Content Application
+   - Option C: Disable kiosk mode if not needed
+4. After fixing, sync the device again
+
+Technical Details: 
+The server automatically disables kiosk mode in the sync response when the Content Application 
+is missing or invalid. This prevents the device from receiving broken kiosk mode settings. 
+Check server logs for specific error messages to diagnose the issue.
