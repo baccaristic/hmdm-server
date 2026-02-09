@@ -403,21 +403,25 @@ public class SyncResource {
         data.setKioskMode(configuration.isKioskMode());
         if (data.isKioskMode()) {
             Integer contentAppId = configuration.getContentAppId();
+            boolean contentAppValid = false;
+            
             if (contentAppId != null) {
                 ApplicationVersion applicationVersion = this.unsecureDAO.findApplicationVersionById(contentAppId);
                 if (applicationVersion != null) {
                     Application application = this.unsecureDAO.findApplicationById(applicationVersion.getApplicationId());
                     data.setMainApp(application.getPkg());
+                    contentAppValid = true;
                 } else {
-                    // Content app not found - disable kiosk mode to prevent device-side failure
-                    logger.warn("Kiosk mode is enabled for configuration {} but content app with ID {} does not exist. Disabling kiosk mode in sync response.",
-                            configuration.getId(), contentAppId);
-                    data.setKioskMode(false);
+                    logger.warn("Kiosk mode is enabled for configuration {} but content app with ID {} does not exist. " +
+                            "Disabling kiosk mode in sync response.", configuration.getId(), contentAppId);
                 }
             } else {
-                // No content app configured - disable kiosk mode
-                logger.warn("Kiosk mode is enabled for configuration {} but no content app is configured. Disabling kiosk mode in sync response.",
-                        configuration.getId());
+                logger.warn("Kiosk mode is enabled for configuration {} but no content app is configured. " +
+                        "Disabling kiosk mode in sync response.", configuration.getId());
+            }
+            
+            // Disable kiosk mode if content app is invalid
+            if (!contentAppValid) {
                 data.setKioskMode(false);
             }
         }
