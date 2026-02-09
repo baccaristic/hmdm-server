@@ -5,3 +5,106 @@ Make the project URL accessible from the local machine.
 If you're using iptables to redirect port 80 to 8080, redirect also for loopback interface:
 
 # iptables -A OUTPUT -o lo -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 8080
+
+Problem: Users can still access device settings in kiosk mode
+Reason: Permissive mode allows users to bypass kiosk restrictions.
+Solution:
+This is now automatically fixed by the server. When kiosk mode is enabled with a valid content app:
+- The server automatically sets permissive mode to false
+- This ensures all restrictions are enforced
+- Users cannot access device settings or system apps
+Note: If you see in logs "forcing permissive mode to false to enforce restrictions", 
+this is normal behavior ensuring kiosk mode security.
+
+Problem: Kiosk mode is not working on Android device
+Reason: Kiosk mode requires a valid Content Application to be configured.
+Solution:
+1. Open the configuration settings in the web panel
+2. Navigate to the "MDM Settings" tab
+3. Enable "Kiosk mode" checkbox
+4. Select a "Content Application" - this is the app that will run in kiosk mode
+5. Optionally configure additional kiosk settings (home button, recents, notifications, etc.)
+6. Save the configuration and sync your device
+
+Note: The Content Application must be installed on the device before kiosk mode can be activated.
+
+Problem: Kiosk mode is enabled in database but not working on device
+Reason: The Content Application configured for kiosk mode may have been deleted or is invalid.
+Solution:
+1. Check the server logs for warnings like: "Kiosk mode is enabled for configuration X but content app with ID Y does not exist"
+2. Verify the Content Application exists:
+   - Query the database: SELECT * FROM applications WHERE id IN (SELECT applicationId FROM applicationVersions WHERE id = Y)
+   - If the application is missing, it was deleted
+3. Fix the configuration:
+   - Option A: Re-add the deleted application to the system
+   - Option B: Open the configuration in web UI, go to MDM Settings, and select a different Content Application
+   - Option C: Disable kiosk mode if not needed
+4. After fixing, sync the device again
+
+Technical Details: 
+The server automatically disables kiosk mode in the sync response when the Content Application 
+is missing or invalid. This prevents the device from receiving broken kiosk mode settings. 
+Check server logs for specific error messages to diagnose the issue.
+
+Problem: Device shows "Kiosk mode: no" even though kiosk mode is configured
+Reason: The ApplicationVersion record doesn't exist, causing server to disable kiosk mode.
+Solution:
+1. Check server logs immediately after device sync for warning messages:
+   - "Kiosk mode is enabled for configuration X but content app version with ID Y does not exist"
+   - This indicates ApplicationVersion record is missing
+2. Verify the database inconsistency:
+   a. Check what contentAppId is configured:
+      SELECT id, name, contentAppId, kioskMode FROM configurations WHERE kioskMode = true
+   b. Check if ApplicationVersion exists:
+      SELECT * FROM applicationVersions WHERE id = <contentAppId>
+   c. If the query returns no rows, the ApplicationVersion is missing
+3. Find the correct application:
+   a. Check which application should be the content app:
+      SELECT id, name, pkg, latestVersion FROM applications WHERE pkg = '<expected_package_name>'
+   b. Note: The latestVersion field may show the contentAppId value, but the actual record doesn't exist
+4. Fix the issue - Option A (Re-upload the application):
+   - Go to web UI → Applications → Find the application
+   - Upload a new version of the APK
+   - This will create the ApplicationVersion record
+5. Fix the issue - Option B (Create ApplicationVersion manually):
+   INSERT INTO applicationVersions (applicationId, version, url)
+   VALUES (<applicationId>, '<version>', '<apk_url>');
+   UPDATE applications SET latestVersion = (SELECT id FROM applicationVersions WHERE applicationId = <applicationId> ORDER BY id DESC LIMIT 1)
+   WHERE id = <applicationId>
+6. After fixing, update configuration to use the correct ApplicationVersion:
+   UPDATE configurations SET contentAppId = <new_version_id> WHERE id = <config_id>
+7. Sync the device again - kiosk mode should now be enabled
+
+Example diagnostic process:
+1. SELECT * FROM applicationVersions WHERE id = <your_contentAppId>;
+   -- If returns no rows, this is the problem
+2. SELECT id, pkg, latestVersion FROM applications WHERE id = <your_application_id>;
+   -- Check package name and latestVersion
+3. If ApplicationVersion doesn't exist, re-upload the APK via web UI or:
+   -- Find if any version exists for this app
+   SELECT * FROM applicationVersions WHERE applicationId = <your_application_id> ORDER BY id DESC LIMIT 1;
+   -- If found, update configuration to use existing version:
+   UPDATE configurations SET contentAppId = <existing_version_id> WHERE contentAppId = <old_contentAppId>;
+   -- If not found, upload APK via web UI to create version
+
+Problem: Kiosk mode configured correctly but still not working
+Reason: There may be a database inconsistency or the application lookup is failing.
+Solution:
+1. Enable debug logging and check for: "Kiosk mode enabled for configuration X with content app: Y"
+2. If you see this debug message, the server is correctly sending kiosk mode settings to the device
+3. Verify the database structure:
+   a. Check ApplicationVersion exists:
+      SELECT * FROM applicationVersions WHERE id = <contentAppId>
+   b. Check Application exists:
+      SELECT * FROM applications WHERE id = (SELECT applicationId FROM applicationVersions WHERE id = <contentAppId>)
+   c. Verify package name is set:
+      SELECT pkg FROM applications WHERE id = (SELECT applicationId FROM applicationVersions WHERE id = <contentAppId>)
+4. Common issues:
+   - ApplicationVersion record missing → re-add the application version
+   - Application record missing → database corruption, restore from backup
+   - Package name is NULL → update the application record with correct package name
+   - ApplicationVersion.applicationId is NULL → database corruption, fix the foreign key
+5. If all database checks pass but kiosk mode still doesn't work:
+   - Check the device logs for MDM-related errors
+   - Verify the device has the necessary permissions for kiosk mode (Device Owner or Device Admin)
+   - Ensure the device supports kiosk mode (Android 5+ recommended, full features require Android 7+)

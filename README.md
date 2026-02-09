@@ -15,6 +15,7 @@ Headwind MDM is a Mobile Device Management platform for Android devices, designe
  - Mobile device management: groups, configurations, device status
  - Setup the available mobile device capabilities (GPS, Wi-Fi, Bluetooth etc.)
  - Manage the automatic OS update mode on the mobile device
+ - Kiosk mode (COSU, single-task mode)
  - Extensible platform design allowing the custom plugin development
  - Collection of application logs in the web panel
  - Centralized configuration of corporate applications
@@ -23,7 +24,6 @@ The *Enterprise edition* of the platform has more features:
 
  - Restriction of mobile user functions ("kid's shell" for corporate users)
  - Disable to change the mobile device settings
- - Kiosk mode (COSU, single-task mode)
  - Sending images from mobile device to server
  - Cloud-based or self-hosted server setup
  - Premium support of enterprise users
@@ -40,6 +40,8 @@ Headwind MDM control panel is cross-platform (it is written in Java and uses Tom
  - Open the web panel and follow the hints to generate a QR code
  - Perform the factory reset on your Android device, tap 7 times on the welcome screen
  - Follow the instructions to scan a QR code and enroll the mobile agent
+
+**Note on Kiosk Mode:** To use kiosk mode, you must configure a Content Application in the MDM settings. The Content Application is the app that will run in single-task mode on the device. See TROUBLESHOOTING.txt for more details.
  
 ## Contributing
 
