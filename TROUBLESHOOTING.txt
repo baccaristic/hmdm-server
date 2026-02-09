@@ -36,6 +36,47 @@ The server automatically disables kiosk mode in the sync response when the Conte
 is missing or invalid. This prevents the device from receiving broken kiosk mode settings. 
 Check server logs for specific error messages to diagnose the issue.
 
+Problem: Device shows "Kiosk mode: no" even though kiosk mode is configured
+Reason: The ApplicationVersion record doesn't exist, causing server to disable kiosk mode.
+Solution:
+1. Check server logs immediately after device sync for warning messages:
+   - "Kiosk mode is enabled for configuration X but content app version with ID Y does not exist"
+   - This indicates ApplicationVersion record is missing
+2. Verify the database inconsistency:
+   a. Check what contentAppId is configured:
+      SELECT id, name, contentAppId, kioskMode FROM configurations WHERE kioskMode = true
+   b. Check if ApplicationVersion exists:
+      SELECT * FROM applicationVersions WHERE id = <contentAppId>
+   c. If the query returns no rows, the ApplicationVersion is missing
+3. Find the correct application:
+   a. Check which application should be the content app:
+      SELECT id, name, pkg, latestVersion FROM applications WHERE pkg = '<expected_package_name>'
+   b. Note: The latestVersion field may show the contentAppId value, but the actual record doesn't exist
+4. Fix the issue - Option A (Re-upload the application):
+   - Go to web UI → Applications → Find the application
+   - Upload a new version of the APK
+   - This will create the ApplicationVersion record
+5. Fix the issue - Option B (Create ApplicationVersion manually):
+   INSERT INTO applicationVersions (applicationId, version, url)
+   VALUES (<applicationId>, '<version>', '<apk_url>');
+   UPDATE applications SET latestVersion = (SELECT id FROM applicationVersions WHERE applicationId = <applicationId> ORDER BY id DESC LIMIT 1)
+   WHERE id = <applicationId>
+6. After fixing, update configuration to use the correct ApplicationVersion:
+   UPDATE configurations SET contentAppId = <new_version_id> WHERE id = <config_id>
+7. Sync the device again - kiosk mode should now be enabled
+
+Example for the specific case (Application ID 78, expected contentAppId 10077):
+1. SELECT * FROM applicationVersions WHERE id = 10077;
+   -- If returns no rows, this is the problem
+2. SELECT id, pkg, latestVersion FROM applications WHERE id = 78;
+   -- Check package name and latestVersion
+3. If ApplicationVersion doesn't exist, re-upload the APK via web UI or:
+   -- Find if any version exists for this app
+   SELECT * FROM applicationVersions WHERE applicationId = 78 ORDER BY id DESC LIMIT 1;
+   -- If found, update configuration to use existing version:
+   UPDATE configurations SET contentAppId = <existing_version_id> WHERE contentAppId = 10077;
+   -- If not found, upload APK via web UI to create version
+
 Problem: Kiosk mode configured correctly but still not working
 Reason: There may be a database inconsistency or the application lookup is failing.
 Solution:
