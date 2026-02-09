@@ -53,14 +53,16 @@ WHERE a.latestVersion IS NOT NULL
 ORDER BY version_status, a.id;
 
 -- Step 5: Find all versions for the content app
--- Replace 78 with your application ID from Step 3
+-- Replace <application_id> with the applicationId from Step 3
+-- If Step 3 returned no results, check your applications table:
+-- SELECT id FROM applications WHERE pkg = '<your_app_package_name>'
 SELECT 
     av.id,
     av.version,
     av.url,
     av.versionCode
 FROM applicationVersions av
-WHERE av.applicationId = 78  -- Replace with your application ID
+WHERE av.applicationId = <application_id>  -- Replace with your application ID
 ORDER BY av.id DESC;
 
 -- Step 6: If you need to fix contentAppId to point to an existing version

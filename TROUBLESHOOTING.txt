@@ -65,16 +65,16 @@ Solution:
    UPDATE configurations SET contentAppId = <new_version_id> WHERE id = <config_id>
 7. Sync the device again - kiosk mode should now be enabled
 
-Example for the specific case (Application ID 78, expected contentAppId 10077):
-1. SELECT * FROM applicationVersions WHERE id = 10077;
+Example diagnostic process:
+1. SELECT * FROM applicationVersions WHERE id = <your_contentAppId>;
    -- If returns no rows, this is the problem
-2. SELECT id, pkg, latestVersion FROM applications WHERE id = 78;
+2. SELECT id, pkg, latestVersion FROM applications WHERE id = <your_application_id>;
    -- Check package name and latestVersion
 3. If ApplicationVersion doesn't exist, re-upload the APK via web UI or:
    -- Find if any version exists for this app
-   SELECT * FROM applicationVersions WHERE applicationId = 78 ORDER BY id DESC LIMIT 1;
+   SELECT * FROM applicationVersions WHERE applicationId = <your_application_id> ORDER BY id DESC LIMIT 1;
    -- If found, update configuration to use existing version:
-   UPDATE configurations SET contentAppId = <existing_version_id> WHERE contentAppId = 10077;
+   UPDATE configurations SET contentAppId = <existing_version_id> WHERE contentAppId = <old_contentAppId>;
    -- If not found, upload APK via web UI to create version
 
 Problem: Kiosk mode configured correctly but still not working

@@ -9,14 +9,14 @@ Based on your report, the device is showing:
 
 ## Root Cause
 
-Your configuration has:
+Your configuration likely has:
 - `kioskMode = true` in the database
-- `contentAppId = 10077`
-- Application ID 78 exists with package "tn.foodify.foodifyrestaurant"
+- `contentAppId = <some_version_id>` (e.g., 10077)
+- Application exists in database (e.g., ID 78 with package "your.app.package")
 
 However, the device is receiving `kioskMode = false` from the server. This means my validation code detected a problem and disabled kiosk mode to prevent device-side failures.
 
-**Most Likely Issue:** The `applicationVersions` table does not have a record with `id = 10077`, even though your `applications.latestVersion` field shows 10077. This is a database inconsistency.
+**Most Likely Issue:** The `applicationVersions` table does not have a record with the ID specified in `contentAppId`, even though your `applications.latestVersion` field may show the same ID. This is a database inconsistency.
 
 ## How to Diagnose
 
@@ -30,8 +30,8 @@ tail -f /path/to/tomcat/logs/catalina.out | grep "Kiosk mode"
 ```
 
 You should see one of these warnings:
-- ❌ "Kiosk mode is enabled for configuration 1 but content app version with ID 10077 does not exist"
-- ✅ "Kiosk mode enabled for configuration 1 with content app: tn.foodify.foodifyrestaurant (78)"
+- ❌ "Kiosk mode is enabled for configuration X but content app version with ID Y does not exist"
+- ✅ "Kiosk mode enabled for configuration X with content app: your.app.package (Z)"
 
 If you see the ❌ warning, continue to Step 2.
 
@@ -40,15 +40,15 @@ If you see the ❌ warning, continue to Step 2.
 Run the diagnostic script I created:
 
 ```bash
-cd /home/runner/work/hmdm-server/hmdm-server
+cd <your_hmdm_server_directory>
 psql -U hmdm -d hmdm -f KIOSK_MODE_DIAGNOSTIC.sql
 ```
 
 Or run these queries manually:
 
 ```sql
--- Check if ApplicationVersion exists
-SELECT * FROM applicationVersions WHERE id = 10077;
+-- Check if ApplicationVersion exists (replace with your contentAppId)
+SELECT * FROM applicationVersions WHERE id = <your_contentAppId>;
 ```
 
 **If this returns no rows, that's your problem!**
@@ -61,7 +61,7 @@ This is the easiest and safest method:
 
 1. Go to the web UI
 2. Navigate to **Applications**
-3. Find "Foodify Restaurant" application
+3. Find your content application (the one configured for kiosk mode)
 4. Click to edit/view it
 5. Upload the APK file again
 6. This will create a new ApplicationVersion record
@@ -72,12 +72,13 @@ This is the easiest and safest method:
 If other versions of the app exist:
 
 ```sql
--- Find existing versions
-SELECT id, version, url FROM applicationVersions WHERE applicationId = 78 ORDER BY id DESC;
+-- Find existing versions (replace with your application ID)
+SELECT id, version, url FROM applicationVersions WHERE applicationId = <your_application_id> ORDER BY id DESC;
 
 -- Update configuration to use an existing version
 -- Replace <version_id> with an id from the query above
-UPDATE configurations SET contentAppId = <version_id> WHERE id = 1;
+-- Replace <config_id> with your configuration ID (usually 1)
+UPDATE configurations SET contentAppId = <version_id> WHERE id = <config_id>;
 ```
 
 ### Option C: Manual Fix (Advanced)
@@ -86,17 +87,18 @@ Only if you understand the database structure:
 
 ```sql
 -- Create a new ApplicationVersion record
+-- Replace values with your actual application details
 INSERT INTO applicationVersions (applicationId, version, url, versionCode)
-VALUES (78, '1.0', '/path/to/foodify.apk', 1);
+VALUES (<your_application_id>, '1.0', '/path/to/your_app.apk', 1);
 
 -- Get the new version ID
-SELECT id FROM applicationVersions WHERE applicationId = 78 ORDER BY id DESC LIMIT 1;
+SELECT id FROM applicationVersions WHERE applicationId = <your_application_id> ORDER BY id DESC LIMIT 1;
 
 -- Update configuration to use new version
-UPDATE configurations SET contentAppId = <new_id> WHERE id = 1;
+UPDATE configurations SET contentAppId = <new_id> WHERE id = <config_id>;
 
 -- Update application's latestVersion pointer
-UPDATE applications SET latestVersion = <new_id> WHERE id = 78;
+UPDATE applications SET latestVersion = <new_id> WHERE id = <your_application_id>;
 ```
 
 ## Verify the Fix
@@ -104,30 +106,30 @@ UPDATE applications SET latestVersion = <new_id> WHERE id = 78;
 After applying one of the fixes above:
 
 1. Sync the device again
-2. Check server logs for: ✅ "Kiosk mode enabled for configuration 1 with content app: tn.foodify.foodifyrestaurant (78)"
+2. Check server logs for: ✅ "Kiosk mode enabled for configuration X with content app: your.app.package (Y)"
 3. Check device info - should now show: **Kiosk mode: yes**
 
 ## Quick Reference SQL Queries
 
 ```sql
--- Check current configuration
-SELECT id, name, kioskMode, contentAppId FROM configurations WHERE id = 1;
+-- Check current configuration (replace with your config ID)
+SELECT id, name, kioskMode, contentAppId FROM configurations WHERE id = <config_id>;
 
--- Verify ApplicationVersion exists
-SELECT * FROM applicationVersions WHERE id = 10077;
+-- Verify ApplicationVersion exists (replace with your contentAppId)
+SELECT * FROM applicationVersions WHERE id = <your_contentAppId>;
 
--- Check Application details
-SELECT id, name, pkg, latestVersion FROM applications WHERE id = 78;
+-- Check Application details (replace with your application ID)
+SELECT id, name, pkg, latestVersion FROM applications WHERE id = <your_application_id>;
 
--- Find all versions for this app
-SELECT id, version, url FROM applicationVersions WHERE applicationId = 78 ORDER BY id DESC;
+-- Find all versions for this app (replace with your application ID)
+SELECT id, version, url FROM applicationVersions WHERE applicationId = <your_application_id> ORDER BY id DESC;
 
--- Check for database inconsistencies
+-- Check for database inconsistencies (replace with your application ID)
 SELECT a.id, a.name, a.latestVersion, 
        CASE WHEN av.id IS NULL THEN 'MISSING!' ELSE 'OK' END as status
 FROM applications a
 LEFT JOIN applicationVersions av ON a.latestVersion = av.id
-WHERE a.id = 78;
+WHERE a.id = <your_application_id>;
 ```
 
 ## Need More Help?
