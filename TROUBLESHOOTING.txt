@@ -35,3 +35,25 @@ Technical Details:
 The server automatically disables kiosk mode in the sync response when the Content Application 
 is missing or invalid. This prevents the device from receiving broken kiosk mode settings. 
 Check server logs for specific error messages to diagnose the issue.
+
+Problem: Kiosk mode configured correctly but still not working
+Reason: There may be a database inconsistency or the application lookup is failing.
+Solution:
+1. Enable debug logging and check for: "Kiosk mode enabled for configuration X with content app: Y"
+2. If you see this debug message, the server is correctly sending kiosk mode settings to the device
+3. Verify the database structure:
+   a. Check ApplicationVersion exists:
+      SELECT * FROM applicationVersions WHERE id = <contentAppId>
+   b. Check Application exists:
+      SELECT * FROM applications WHERE id = (SELECT applicationId FROM applicationVersions WHERE id = <contentAppId>)
+   c. Verify package name is set:
+      SELECT pkg FROM applications WHERE id = (SELECT applicationId FROM applicationVersions WHERE id = <contentAppId>)
+4. Common issues:
+   - ApplicationVersion record missing → re-add the application version
+   - Application record missing → database corruption, restore from backup
+   - Package name is NULL → update the application record with correct package name
+   - ApplicationVersion.applicationId is NULL → database corruption, fix the foreign key
+5. If all database checks pass but kiosk mode still doesn't work:
+   - Check the device logs for MDM-related errors
+   - Verify the device has the necessary permissions for kiosk mode
+   - Ensure the device is running Android 7+ with device owner provisioning
